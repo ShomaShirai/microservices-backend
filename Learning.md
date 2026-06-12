@@ -46,7 +46,7 @@ Github actionsとの違いとしては，Circle CIを使った場合は，新た
 Circle CIでは，Executorを独立して定義することができるので，実行環境を使いまわすことができる．時間の削減ができる．
 
 ### monorepo-ci.yml
-
+マイクロサービスのデプロイなどを行う．
 
 ### config.yml
 mappingにより，モノレポの各マイクロサービスを分割して，更新があった場合にCIを用いる．
@@ -56,4 +56,27 @@ mapping: |
   src/customer/.* customer true
   src/orchestrator/.* orchestrator true
   src/order/.* order true
+```
+
+### opts/export_envs.sh
+Circle CI Project Settingsによって，環境変数(AWS_ACCOUNT_ID、AWS_DEFAULT_REGION)を設定しておく．
+→ AWS_ECR_ACCOUNT_URLを生成する
+→ ECRへのログインとイメージのPush(monorepo.ymlで実装)
+```yaml
+# dockerイメージをプッシュします．
+push_image:
+  steps:
+    - aws-cli/install:
+        version: "2.2.5"
+    - run:
+        name: Docker login
+        command: |
+          source ./ops/export_envs.sh
+          aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ECR_ACCOUNT_URL}
+    - run:
+        name: Docker push
+        command: |
+          source ./ops/export_envs.sh
+          docker tag ${SERVICE_NAME}-${VENDOR_NAME}:latest ${AWS_ECR_ACCOUNT_URL}/${SERVICE_NAME}-${VENDOR_NAME}-repository:${CIRCLE_SHA1}
+          docker push ${AWS_ECR_ACCOUNT_URL}/${SERVICE_NAME}-${VENDOR_NAME}-repository:${CIRCLE_SHA1}
 ```

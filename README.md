@@ -112,7 +112,23 @@ CI/CDを構成するツールの一覧です．
 | 役割   | ツール      | 導入の状況          |
 |------|----------|----------------|
 | CI   | CircleCI | ⭕ |
+| コンテナイメージのセキュリティ検査 | Trivy | ⭕ |
 | CD   | ArgoCD   | **[microservices-manifestsリポジトリ](https://github.com/hiroki-it/microservices-manifests)** を参照 |
+
+CircleCIでは，Dockerイメージのビルド後，AWS ECRへのプッシュ前にTrivyを実行します．
+現在は，重要度が`HIGH`または`CRITICAL`の脆弱性と，イメージに含まれる秘密情報をレポートします．
+導入初期の検出状況を確認するため，脆弱性が見つかってもCIを失敗させない設定です．
+
+ローカルでビルド済みのイメージを検査する場合は，以下のように実行します．
+
+```bash
+trivy image \
+  --scanners vuln,secret \
+  --severity HIGH,CRITICAL \
+  --exit-code 0 \
+  --no-progress \
+  account-gin:latest
+```
 
 <br>
 

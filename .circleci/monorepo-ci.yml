@@ -82,6 +82,31 @@ commands:
             cd ./src/${SERVICE_NAME}
             docker-compose build
 
+  # Trivyをインストールします．
+  install_trivy:
+    steps:
+      - run:
+          name: Install Trivy
+          command: |
+            set -euo pipefail
+            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+              | sudo sh -s -- -b /usr/local/bin v0.71.0
+            trivy --version
+
+  # ビルドしたdockerイメージの脆弱性と秘密情報を検査します．
+  scan_image:
+    steps:
+      - run:
+          name: Scan Docker image with Trivy
+          command: |
+            set -euo pipefail
+            trivy image \
+              --scanners vuln,secret \
+              --severity HIGH,CRITICAL \
+              --exit-code 0 \
+              --no-progress \
+              "${SERVICE_NAME}-${VENDOR_NAME}:latest"
+
   # dockerイメージをプッシュします．
   push_image:
     steps:
@@ -111,6 +136,8 @@ jobs:
       - setup_env_files
       - validate_docker_compose_yml
       - build_image
+      - install_trivy
+      - scan_image
       - push_image
 
   # accountサービスのビルドを実行します．
@@ -124,6 +151,8 @@ jobs:
       - setup_env_files
       - validate_docker_compose_yml
       - build_image
+      - install_trivy
+      - scan_image
       - push_image
 
   # orchestratorサービスのビルドを実行します．
@@ -137,6 +166,8 @@ jobs:
       - setup_env_files
       - validate_docker_compose_yml
       - build_image
+      - install_trivy
+      - scan_image
       - push_image
 
   # orderサービスのビルドを実行します．
@@ -150,6 +181,8 @@ jobs:
       - setup_env_files
       - validate_docker_compose_yml
       - build_image
+      - install_trivy
+      - scan_image
       - push_image
 
   # GitOpsのため，microservices-manifestsリポジトリにプルリクエストを作成します．
