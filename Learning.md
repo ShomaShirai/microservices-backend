@@ -80,3 +80,33 @@ push_image:
           docker tag ${SERVICE_NAME}-${VENDOR_NAME}:latest ${AWS_ECR_ACCOUNT_URL}/${SERVICE_NAME}-${VENDOR_NAME}-repository:${CIRCLE_SHA1}
           docker push ${AWS_ECR_ACCOUNT_URL}/${SERVICE_NAME}-${VENDOR_NAME}-repository:${CIRCLE_SHA1}
 ```
+
+### Trivyについての質問
+ECR Push前に脆弱性や秘密情報に関して，検査を行ってくれるライブラリ
+```bash
+# Trivyをインストールします．
+install_trivy:
+  steps:
+    - run:
+        name: Install Trivy
+        command: |
+          set -euo pipefail
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sudo sh -s -- -b /usr/local/bin v0.71.0
+          trivy --version
+
+# ビルドしたdockerイメージの脆弱性と秘密情報を検査します．
+scan_image:
+  steps:
+    - run:
+        name: Scan Docker image with Trivy
+        command: |
+          set -euo pipefail
+          trivy image \
+            --scanners vuln,secret \
+            --severity HIGH,CRITICAL \
+            --exit-code 0 \
+            --no-progress \
+            "${SERVICE_NAME}-${VENDOR_NAME}:latest"
+```
+
